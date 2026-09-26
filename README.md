@@ -1,79 +1,64 @@
-# Aim Tester API
+# AimTester API
 
-API REST creada con Spring Boot 3.5.6 y Java 17.
+API REST de AimTester, construida con Java 17 y Spring Boot 3.5.6. Para información sobre el cliente React y el flujo de desarrollo completo, consulta el [README principal](../README.md).
 
 ## Requisitos
 
 - Java 17
-- Maven 3.9+
+- Maven 3.9 o posterior
 
-Verifica la versión instalada:
+## Ejecutar
 
-```bash
-java -version
-mvn -v
-```
+Desde este directorio (`AimTesterApi`):
 
-## Ejecutar la aplicación
-
-Desde la raíz del proyecto:
-
-```bash
+```powershell
 mvn spring-boot:run
 ```
 
-La API quedará disponible en:
+La URL base es `http://localhost:8080/aim-tester-api`.
 
-- http://localhost:8080/v1/aim-tester-api
+## Endpoints
 
-## Swagger / OpenAPI
+| Método | Ruta | Acceso | Descripción |
+| --- | --- | --- | --- |
+| `POST` | `/auth/login` | Público | Recibe `username` y `password`; devuelve `{ "token": "..." }` |
+| `GET` | `/player/me` | JWT | Devuelve el nombre del usuario autenticado |
+| `GET` | `/player/health` | JWT | Devuelve el estado y la hora del API |
+| `GET` | `/swagger-ui.html` | Público | Swagger UI |
+| `GET` | `/v3/api-docs` | Público | Especificación OpenAPI |
 
-La documentación Swagger queda publicada en:
+Las rutas protegidas esperan `Authorization: Bearer <token>`. Los tokens duran 15 minutos y una petición autenticada válida devuelve un JWT renovado en la cabecera `X-Auth-Token`.
 
-- http://localhost:8080/v1/aim-tester-api/swagger-ui.html
-- http://localhost:8080/v1/aim-tester-api/v3/api-docs
+## Usuario de desarrollo
 
-También puedes abrir la especificación JSON directamente:
+La configuración actual carga este usuario en memoria:
 
-```bash
-curl http://localhost:8080/v1/aim-tester-api/v3/api-docs
-```
+- Usuario: `admin`
+- Contraseña: `admin123`
 
-## Endpoint de salud
+No hay base de datos conectada ni registro persistente. Cambia las credenciales y el secreto JWT antes de desplegar en un entorno real.
 
-```bash
-curl http://localhost:8080/v1/aim-tester-api/api/health
-```
+## Pruebas y empaquetado
 
-Respuesta esperada:
-
-```json
-{
-  "status": "UP",
-  "timestamp": "2026-09-25T13:00:00Z"
-}
-```
-
-## Compilar y empaquetar
-
-```bash
+```powershell
+mvn test
 mvn clean package
 ```
 
-## Ejecutar el JAR generado
+Para ejecutar el JAR generado:
 
-```bash
+```powershell
 java -jar target/aim-tester-api-0.0.1-SNAPSHOT.jar
 ```
 
-> Con el context path configurado, la aplicación queda bajo la base URL: http://localhost:8080/v1/aim-tester-api
+## Configuración
 
-## Configuración relevante
+En `src/main/resources/application.properties`:
 
 ```properties
 server.port=8080
-server.servlet.context-path=/v1/aim-tester-api
-
+server.servlet.context-path=/aim-tester-api
+jwt.expiration=900000
 springdoc.api-docs.path=/v3/api-docs
 springdoc.swagger-ui.path=/swagger-ui.html
 ```

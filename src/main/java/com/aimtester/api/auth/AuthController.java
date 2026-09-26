@@ -1,36 +1,31 @@
 package com.aimtester.api.auth;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.aimtester.api.security.JwtService;
-
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
 
-    private final AuthenticationManager authenticationManager;
-    private final JwtService jwtService;
+    private final AuthService authService;
 
-    public AuthController(AuthenticationManager authenticationManager, JwtService jwtService) {
-        this.authenticationManager = authenticationManager;
-        this.jwtService = jwtService;
+    public AuthController(AuthService authService) {
+        this.authService = authService;
     }
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest loginRequest) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.username(), loginRequest.password())
-        );
-
-        String token = jwtService.generateToken(authentication.getName());
+        String token = authService.login(loginRequest.username(), loginRequest.password());
         return ResponseEntity.ok(new AuthResponse(token));
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest registerRequest) {
+        String token = authService.register(registerRequest);
+        return ResponseEntity.status(201).body(new AuthResponse(token));
     }
 
     public record LoginRequest(String username, String password) {
