@@ -61,6 +61,32 @@ public class StatsService {
         );
     }
 
+    /**
+     * Estadísticas del jugador desglosadas por modo de juego, de la mejor
+     * puntuación a la peor. Vacío si todavía no ha jugado.
+     */
+    @Transactional(readOnly = true)
+    public List<ModeStatsResponse> playerStatsByMode(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("El usuario autenticado ya no existe."));
+
+        return gameMatchRepository.aggregateByUserIdAndMode(user.getId()).stream()
+                .map(row -> {
+                    long totalHits = asLong(row.getTotalHits());
+                    long totalMisses = asLong(row.getTotalMisses());
+
+                    return new ModeStatsResponse(
+                            row.getMode(),
+                            asLong(row.getMatchesPlayed()),
+                            totalHits,
+                            totalMisses,
+                            Accuracy.of(totalHits, totalMisses),
+                            (int) asLong(row.getBestScore()),
+                            asBigDecimal(row.getAvgScore()));
+                })
+                .toList();
+    }
+
     @Transactional(readOnly = true)
     public List<LeaderboardEntry> leaderboard(Integer limit) {
         int pageLimit = limit == null ? DEFAULT_LEADERBOARD_LIMIT

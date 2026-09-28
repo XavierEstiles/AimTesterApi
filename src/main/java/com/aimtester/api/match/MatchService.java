@@ -56,13 +56,18 @@ public class MatchService {
         return MatchResponse.from(match);
     }
 
+    /**
+     * Historial paginado de más reciente a más antiguo. {@code page} es 0-based y
+     * las páginas fuera de rango devuelven una lista vacía en vez de fallar.
+     */
     @Transactional(readOnly = true)
-    public List<MatchResponse> history(String username, Integer limit) {
+    public List<MatchResponse> history(String username, Integer limit, Integer page) {
         int pageLimit = limit == null ? 20 : Math.min(Math.max(limit, 1), MAX_HISTORY_LIMIT);
+        int pageIndex = page == null ? 0 : Math.max(page, 0);
         User user = findUser(username);
 
         return gameMatchRepository
-                .findByUserIdOrderByStartedAtDesc(user.getId(), PageRequest.of(0, pageLimit))
+                .findByUserIdOrderByStartedAtDesc(user.getId(), PageRequest.of(pageIndex, pageLimit))
                 .stream()
                 .map(MatchResponse::from)
                 .toList();

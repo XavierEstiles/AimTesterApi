@@ -38,17 +38,17 @@ class AuthControllerTest {
     @Test
     void loginShouldAllowCorsPreflightFromVite() throws Exception {
         mockMvc.perform(options("/auth/login")
-                        .header("Origin", "http://localhost:5173")
+                        .header("Origin", "http://192.168.50.50:5173")
                         .header("Access-Control-Request-Method", "POST")
                         .header("Access-Control-Request-Headers", "content-type"))
                 .andExpect(status().isOk())
-                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"));
+                .andExpect(header().string("Access-Control-Allow-Origin", "http://192.168.50.50:5173"));
     }
 
     @Test
     void authenticatedRequestShouldReturnRenewedToken() throws Exception {
         MvcResult firstResponse = mockMvc.perform(get("/player/me")
-                        .header("Origin", "http://localhost:5173")
+                        .header("Origin", "http://192.168.50.50:5173")
                         .header("Authorization", "Bearer " + jwtService.generateToken("admin")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("admin"))

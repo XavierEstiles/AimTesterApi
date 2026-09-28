@@ -59,6 +59,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(java.util.List.of(
+            "http://192.168.50.50:[*]",
             "http://localhost:[*]",
             "http://127.0.0.1:[*]"
         ));

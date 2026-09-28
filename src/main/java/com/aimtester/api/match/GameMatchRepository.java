@@ -29,6 +29,25 @@ public interface GameMatchRepository extends JpaRepository<GameMatch, Long> {
            """)
     MatchStatsAggregation aggregateByUserId(@Param("userId") Long userId);
 
+    /**
+     * Agregados de las partidas de un usuario agrupadas por modo, ordenados de
+     * la mejor puntuación (dentro de cada modo) a la peor. Los totales no pueden
+     * ser {@code null} porque cada fila agrupada tiene al menos una partida.
+     */
+    @Query("""
+           SELECT m.mode AS mode,
+                  COUNT(m) AS matchesPlayed,
+                  SUM(m.hits) AS totalHits,
+                  SUM(m.misses) AS totalMisses,
+                  MAX(m.hits) AS bestScore,
+                  AVG(m.hits) AS avgScore
+             FROM GameMatch m
+            WHERE m.user.id = :userId
+            GROUP BY m.mode
+            ORDER BY MAX(m.hits) DESC, COUNT(m) DESC, m.mode ASC
+           """)
+    List<ModeStatsAggregation> aggregateByUserIdAndMode(@Param("userId") Long userId);
+
     /** Ranking global agrupando por usuario. */
     @Query("""
            SELECT m.user.username AS username,

@@ -29,9 +29,16 @@ public class MatchController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    /**
+     * Historial paginado del jugador autenticado, del más reciente al más antiguo.
+     *
+     * @param limit partidas por página (por defecto 20, máximo 100)
+     * @param page  página solicitada, empezando en 0
+     */
     @GetMapping
     public List<MatchResponse> history(Authentication authentication,
-            @RequestParam(name = "limit", required = false) Integer limit) {
-        return matchService.history(authentication.getName(), limit);
+            @RequestParam(name = "limit", required = false) Integer limit,
+            @RequestParam(name = "page", required = false) Integer page) {
+        return matchService.history(authentication.getName(), limit, page);
     }
 }

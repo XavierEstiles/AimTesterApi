@@ -118,6 +118,61 @@ class MatchControllerTest {
     }
 
     @Test
+    void historyShouldPaginateMatchesNewestFirst() throws Exception {
+        String username = register("jugador-paginas");
+
+        // Empezadas hace 60, 45 y 30 segundos: ordenado por startedAt desc
+        // queda 30s, 45s, 60s (el DATETIME solo guarda segundos).
+        save(username, 60, 10, 0);
+        save(username, 45, 20, 0);
+        save(username, 30, 30, 0);
+
+        mockMvc.perform(get("/matches")
+                        .param("limit", "2")
+                        .param("page", "0")
+                        .header("Authorization", token(username)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].hits").value(30))
+                .andExpect(jsonPath("$[1].hits").value(20));
+
+        mockMvc.perform(get("/matches")
+                        .param("limit", "2")
+                        .param("page", "1")
+                        .header("Authorization", token(username)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].hits").value(10));
+    }
+
+    @Test
+    void historyShouldTreatNegativePageAsTheFirstOne() throws Exception {
+        String username = register("jugador-pagina-negativa");
+
+        save(username, 5, 1);
+
+        mockMvc.perform(get("/matches")
+                        .param("page", "-3")
+                        .header("Authorization", token(username)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    void historyShouldReturnAnEmptyListBeyondTheLastPage() throws Exception {
+        String username = register("jugador-pagina-vacia");
+
+        save(username, 5, 1);
+
+        mockMvc.perform(get("/matches")
+                        .param("limit", "1")
+                        .param("page", "9")
+                        .header("Authorization", token(username)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
     void statsShouldAggregateOwnMatches() throws Exception {
         String username = register("jugador-stats");
 
@@ -133,6 +188,38 @@ class MatchControllerTest {
                 .andExpect(jsonPath("$.bestScore").value(40))
                 .andExpect(jsonPath("$.avgScore").value(25.00))
                 .andExpect(jsonPath("$.lastMatchAt").exists());
+    }
+
+    @Test
+    void statsByModeShouldGroupMatchesPerMode() throws Exception {
+        String username = register("jugador-modos");
+
+        save(username, "classic_30s", 40, 10);
+        save(username, "precision_30s", 10, 0);
+        save(username, "precision_30s", 25, 5);
+
+        mockMvc.perform(get("/player/stats/by-mode").header("Authorization", token(username)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].mode").value("classic_30s"))
+                .andExpect(jsonPath("$[0].matchesPlayed").value(1))
+                .andExpect(jsonPath("$[0].bestScore").value(40))
+                .andExpect(jsonPath("$[0].accuracy").value(80.00))
+                .andExpect(jsonPath("$[1].mode").value("precision_30s"))
+                .andExpect(jsonPath("$[1].matchesPlayed").value(2))
+                .andExpect(jsonPath("$[1].bestScore").value(25))
+                .andExpect(jsonPath("$[1].totalHits").value(35))
+                .andExpect(jsonPath("$[1].totalMisses").value(5))
+                .andExpect(jsonPath("$[1].accuracy").value(87.5))
+                .andExpect(jsonPath("$[1].avgScore").value(17.50));
+    }
+
+    @Test
+    void statsByModeShouldRequireAuthentication() throws Exception {
+        MvcResult result = mockMvc.perform(get("/player/stats/by-mode")).andReturn();
+
+        int status = result.getResponse().getStatus();
+        assertTrue(status == 401 || status == 403, "Se esperaba 401 o 403, llegó " + status);
     }
 
     @Test
@@ -158,6 +245,24 @@ class MatchControllerTest {
                         .header("Authorization", token(username))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"hits\":" + hits + ",\"misses\":" + misses + "}"))
+                .andExpect(status().isCreated());
+    }
+
+    private void save(String username, String mode, int hits, int misses) throws Exception {
+        mockMvc.perform(post("/matches")
+                        .header("Authorization", token(username))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"mode\":\"" + mode + "\",\"hits\":" + hits + ",\"misses\":" + misses + "}"))
+                .andExpect(status().isCreated());
+    }
+
+    /** Guarda una partida empezada hace {@code durationSeconds} segundos. */
+    private void save(String username, int durationSeconds, int hits, int misses) throws Exception {
+        mockMvc.perform(post("/matches")
+                        .header("Authorization", token(username))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"durationSeconds\":" + durationSeconds + ",\"hits\":" + hits
+                                + ",\"misses\":" + misses + "}"))
                 .andExpect(status().isCreated());
     }
 
